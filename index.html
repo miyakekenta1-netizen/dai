@@ -1,1013 +1,1045 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>バイタル記録</title>
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="バイタル記録">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#1a6b5e">
-<!-- アイコン（iOS用） -->
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #f7f5f2;
-    --white: #ffffff;
-    --border: #e4dfd8;
-    --text: #1e1c1a;
-    --muted: #8a837a;
-    --teal: #1a6b5e;
-    --teal-light: #e6f2f0;
-    --teal-mid: #a8cfc9;
-    --red: #bf3b2e;
-    --red-light: #fbecea;
-    --orange: #c96a1a;
-    --orange-light: #fdf0e6;
-    --green: #2a7a42;
-    --green-light: #eaf4ee;
-    --shadow-sm: 0 1px 4px rgba(30,28,26,0.07);
-    --shadow: 0 2px 12px rgba(30,28,26,0.09);
-    --shadow-lg: 0 8px 32px rgba(30,28,26,0.13);
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>デイサービス稼働率管理システム</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d47a1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="稼働率管理">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* HEADER */
-  .header {
-    background: var(--teal); color: white;
-    padding: 0 20px; height: 56px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 200;
-  }
-  .header-left { display: flex; align-items: center; gap: 10px; }
-  .header-title { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; }
-  .header-right { font-size: 11px; opacity: 0.8; font-family: 'IBM Plex Mono', monospace; }
+        body {
+            font-family: 'Meiryo', 'Hiragino Kaku Gothic Pro', sans-serif;
+            background: #f0f4f8;
+            color: #2c3e50;
+            min-height: 100vh;
+        }
 
-  /* NAV */
-  .nav { background: var(--white); border-bottom: 1px solid var(--border); display: flex; position: sticky; top: 56px; z-index: 100; }
-  .nav-tab {
-    flex: 1; padding: 13px 6px; border: none; background: none; cursor: pointer;
-    font-family: inherit; font-size: 12px; font-weight: 500; color: var(--muted);
-    border-bottom: 2px solid transparent; transition: all 0.2s;
-    display: flex; align-items: center; justify-content: center; gap: 5px;
-  }
-  .nav-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
-  .nav-tab:hover:not(.active) { color: var(--text); background: var(--bg); }
+        /* ===== HEADER ===== */
+        header {
+            background: linear-gradient(135deg, #1565c0, #0d47a1);
+            color: white;
+            padding: 0 20px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-  .main { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-  /* CARD */
-  .card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); padding: 20px; margin-bottom: 16px; }
-  .card-title { font-size: 14px; font-weight: 700; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-  .card-title-accent { width: 3px; height: 16px; background: var(--teal); border-radius: 2px; flex-shrink: 0; }
+        .header-left .icon { font-size: 22px; }
 
-  /* STATS */
-  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
-  .stat-box { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; text-align: center; box-shadow: var(--shadow-sm); }
-  .stat-num { font-size: 26px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--teal); }
-  .stat-num.red { color: var(--red); }
-  .stat-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+        .header-left .titles { line-height: 1.3; }
+        .header-left .app-title { font-size: 11px; opacity: 0.8; }
+        #facilityNameDisp { font-size: 15px; font-weight: bold; }
 
-  /* ALERT */
-  .alert-banner { background: var(--red-light); border: 1px solid #f0b8b3; border-left: 3px solid var(--red); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 10px; font-size: 13px; color: var(--red); display: flex; align-items: center; gap: 8px; }
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-  /* RESIDENT GRID */
-  .resident-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
-  .res-card { border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 14px; cursor: pointer; transition: all 0.18s; background: var(--white); }
-  .res-card:hover { border-color: var(--teal); box-shadow: var(--shadow); }
-  .res-card.selected { border-color: var(--teal); background: var(--teal-light); }
-  .res-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .res-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
-  .res-name { font-weight: 700; font-size: 14px; line-height: 1.3; }
-  .res-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .res-vitals { display: flex; gap: 6px; flex-wrap: wrap; }
-  .res-vital-pill { font-size: 11px; font-family: 'IBM Plex Mono', monospace; padding: 2px 7px; border-radius: 20px; background: var(--bg); color: var(--muted); }
-  .pill-ok { background: var(--green-light); color: var(--green); }
-  .pill-warn { background: var(--orange-light); color: var(--orange); }
-  .pill-alert { background: var(--red-light); color: var(--red); }
-  .res-time { font-size: 10px; color: var(--muted); margin-top: 8px; }
+        .nav-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .nav-btn:hover { background: rgba(255,255,255,0.25); }
 
-  /* CHIP */
-  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-  .chip-ok { background: var(--green-light); color: var(--green); }
-  .chip-warn { background: var(--orange-light); color: var(--orange); }
-  .chip-alert { background: var(--red-light); color: var(--red); }
-  .chip-none { background: var(--bg); color: var(--muted); }
-  .chip-today { background: #e8f0fe; color: #1a56a8; }
+        #monthDisp {
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 130px;
+            text-align: center;
+        }
 
-  /* FORM */
-  .form-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; display: block; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-  @media(max-width:520px) { .form-row { grid-template-columns: 1fr; } }
-  .input-group input {
-    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-    font-size: 20px; font-family: 'IBM Plex Mono', monospace; font-weight: 500;
-    background: var(--bg); color: var(--text); text-align: center; transition: border-color 0.18s;
-    -moz-appearance: textfield;
-  }
-  .input-group input::-webkit-inner-spin-button, .input-group input::-webkit-outer-spin-button { -webkit-appearance: none; }
-  .input-group input:focus { outline: none; border-color: var(--teal); background: var(--white); }
-  .input-group input.warn { border-color: var(--orange); background: var(--orange-light); }
-  .input-group input.alert { border-color: var(--red); background: var(--red-light); }
-  .input-unit { font-size: 11px; color: var(--muted); text-align: center; margin-top: 4px; font-family: 'IBM Plex Mono', monospace; }
-  .bp-inputs { display: flex; align-items: center; gap: 6px; }
-  .bp-inputs input { flex: 1; }
-  .bp-sep { font-size: 24px; color: var(--muted); flex-shrink: 0; font-weight: 300; }
-  .note-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; background: var(--bg); color: var(--text); resize: vertical; transition: border-color 0.18s; }
-  .note-input:focus { outline: none; border-color: var(--teal); background: var(--white); }
-  .dt-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 14px; background: var(--bg); color: var(--text); transition: border-color 0.18s; }
-  .dt-input:focus { outline: none; border-color: var(--teal); background: var(--white); }
-  .ref-table { font-size: 11px; color: var(--muted); margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
-  .ref-item { display: flex; align-items: center; gap: 4px; }
-  .ref-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+        .header-right { display: flex; gap: 8px; }
 
-  /* BUTTONS */
-  .btn { border: none; border-radius: var(--radius-sm); font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.18s; display: inline-flex; align-items: center; gap: 6px; }
-  .btn-primary { background: var(--teal); color: white; padding: 12px 24px; font-size: 14px; }
-  .btn-primary:hover { background: #145249; }
-  .btn-secondary { background: var(--bg); color: var(--text); padding: 10px 18px; font-size: 13px; border: 1.5px solid var(--border); }
-  .btn-secondary:hover { border-color: var(--teal); color: var(--teal); }
-  .btn-csv { background: #1e5c2e; color: white; padding: 10px 18px; font-size: 13px; }
-  .btn-csv:hover { background: #164823; }
-  .btn-sm { padding: 6px 12px; font-size: 12px; }
-  .btn-ghost { background: none; border: none; color: var(--muted); padding: 4px 8px; font-size: 13px; cursor: pointer; }
-  .btn-ghost:hover { color: var(--red); }
-  .btn-danger { background: var(--red); color: white; padding: 10px 18px; font-size: 13px; }
-  .btn-danger:hover { background: #9e2f25; }
-  .form-footer { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 16px; }
+        .hdr-btn {
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .hdr-btn:hover { background: rgba(255,255,255,0.25); }
 
-  /* TABLE */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th { background: var(--bg); text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
-  tbody td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: var(--bg); }
-  .td-mono { font-family: 'IBM Plex Mono', monospace; }
-  .td-alert { color: var(--red); font-weight: 600; }
-  .td-warn { color: var(--orange); font-weight: 600; }
+        /* ===== MAIN ===== */
+        main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px;
+        }
 
-  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-  .filter-bar select, .filter-bar input[type=date] { padding: 8px 10px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans JP', sans-serif; font-size: 13px; background: var(--white); color: var(--text); cursor: pointer; }
-  .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--teal); }
+        /* ===== SUMMARY CARDS ===== */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
 
-  .empty { text-align: center; padding: 40px; color: var(--muted); }
-  .empty-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.35; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            border-left: 4px solid #1565c0;
+        }
+        .card:nth-child(2) { border-left-color: #2e7d32; }
+        .card:nth-child(3) { border-left-color: #f57f17; }
+        .card:nth-child(4) { border-left-color: #c62828; }
 
-  /* ====== SCAN / IMPORT UI ====== */
-  .scan-zone {
-    border: 2px dashed var(--teal-mid); border-radius: var(--radius);
-    padding: 32px 20px; text-align: center; cursor: pointer;
-    background: var(--teal-light); transition: all 0.2s; position: relative;
-  }
-  .scan-zone:hover { border-color: var(--teal); background: #d8ecea; }
-  .scan-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .scan-icon { font-size: 40px; margin-bottom: 10px; }
-  .scan-title { font-size: 15px; font-weight: 700; color: var(--teal); margin-bottom: 6px; }
-  .scan-sub { font-size: 12px; color: var(--muted); }
+        .card-label {
+            font-size: 11px;
+            color: #999;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
 
-  .preview-img { width: 100%; max-height: 260px; object-fit: contain; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 12px; background: #f0f0f0; }
+        .card-val {
+            font-size: 44px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
 
-  /* AI loading */
-  .ai-loading { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 28px; color: var(--teal); font-weight: 600; font-size: 14px; }
-  .spinner { width: 28px; height: 28px; border: 3px solid var(--teal-mid); border-top-color: var(--teal); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+        .card-unit {
+            font-size: 16px;
+            color: #999;
+            margin-left: 3px;
+        }
 
-  /* PARSED LIST */
-  .parsed-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-  .parsed-row {
-    display: grid; grid-template-columns: 1fr 80px 90px 80px auto;
-    gap: 8px; align-items: center; padding: 10px 12px;
-    border: 1px solid var(--border); border-radius: var(--radius-sm);
-    background: var(--bg);
-  }
-  .parsed-row input {
-    padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px;
-    font-family: inherit; font-size: 13px; background: var(--white); color: var(--text); width: 100%;
-  }
-  .parsed-row input:focus { outline: none; border-color: var(--teal); }
-  .parsed-row select { padding: 7px 8px; border: 1.5px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); color: var(--text); width: 100%; }
-  .parsed-row select:focus { outline: none; border-color: var(--teal); }
-  .parsed-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; padding: 4px; transition: color 0.15s; }
-  .parsed-del:hover { color: var(--red); }
+        .card-sub {
+            font-size: 10px;
+            color: #bbb;
+            margin-top: 4px;
+        }
 
-  .parsed-header { display: grid; grid-template-columns: 1fr 80px 90px 80px auto; gap: 8px; padding: 0 12px 6px; font-size: 11px; font-weight: 600; color: var(--muted); }
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            gap: 2px;
+            background: white;
+            border-radius: 10px;
+            padding: 4px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+        }
 
-  .today-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f0fe; color: #1a56a8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .tab {
+            flex: 1;
+            padding: 9px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #999;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #1565c0;
+            color: white;
+            box-shadow: 0 2px 6px rgba(21,101,192,0.4);
+        }
 
-  .info-box { background: var(--teal-light); border: 1px solid var(--teal-mid); border-radius: var(--radius-sm); padding: 12px 14px; font-size: 12px; color: var(--teal); margin-bottom: 14px; line-height: 1.7; }
+        /* ===== TABLE ===== */
+        .tbl-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
 
-  /* RESIDENTS MANAGE */
-  .res-manage-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .res-manage-item:last-child { border-bottom: none; }
-  .add-form { display: grid; grid-template-columns: 1fr 80px 100px 80px; gap: 10px; }
-  @media(max-width:580px) { .add-form { grid-template-columns: 1fr 1fr; } }
-  .add-form input, .add-form select { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; background: var(--bg); color: var(--text); }
-  .add-form input:focus, .add-form select:focus { outline: none; border-color: var(--teal); background: var(--white); }
+        .tbl-head {
+            padding: 10px 16px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+        }
 
-  /* TOAST */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--teal); color: white; padding: 13px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 9999; animation: slideUp 0.3s ease; }
-  @keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .tbl-wrap { overflow-x: auto; }
 
-  .sec-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
 
-  /* Today list header */
-  .today-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-  .today-date-label { font-size: 13px; font-weight: 700; color: var(--teal); }
+        thead { background: #f8f9fa; }
 
-  @media(max-width:480px) { .stats-row { grid-template-columns: 1fr 1fr; } .stats-row .stat-box:last-child { grid-column: 1/-1; } }
-</style>
+        th {
+            padding: 9px 6px;
+            text-align: center;
+            color: #777;
+            font-size: 11px;
+            font-weight: 600;
+            border-bottom: 2px solid #e8ecf0;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 5px 6px;
+            text-align: center;
+            border-bottom: 1px solid #f0f4f8;
+        }
+
+        tr:hover { background: rgba(21,101,192,0.015); }
+
+        .row-holiday { background: #fafafa !important; }
+        .row-holiday td { color: #ccc; }
+        .row-sunday .c-date, .row-sunday .c-dow { color: #e53935 !important; font-weight: 600; }
+        .row-saturday .c-date, .row-saturday .c-dow { color: #1976d2 !important; font-weight: 600; }
+
+        .inp {
+            width: 54px;
+            padding: 4px 2px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 13px;
+            color: #333;
+        }
+        .inp:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 2px rgba(21,101,192,0.15);
+        }
+        .inp:disabled { background: #f5f5f5; color: #ccc; border-color: #eee; }
+
+        .note-inp {
+            width: 90px;
+            padding: 4px 5px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 11px;
+            color: #666;
+        }
+        .note-inp:focus { outline: none; border-color: #1565c0; }
+
+        .act-cell { font-weight: 700; font-size: 14px; }
+
+        /* Rate pills */
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 52px;
+        }
+        .pill-a { background: #e8f5e9; color: #1b5e20; }
+        .pill-b { background: #e3f2fd; color: #0d47a1; }
+        .pill-c { background: #fff3e0; color: #e65100; }
+        .pill-d { background: #fff8e1; color: #f57f17; }
+        .pill-e { background: #ffebee; color: #b71c1c; }
+
+        /* Toggle button */
+        .tog {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 1px solid;
+        }
+        .tog-open { background: #e8f5e9; border-color: #a5d6a7; color: #2e7d32; }
+        .tog-closed { background: #ffebee; border-color: #ef9a9a; color: #c62828; }
+
+        /* ===== CHART ===== */
+        .chart-card {
+            background: white;
+            border-radius: 10px;
+            padding: 18px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            margin-bottom: 14px;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 14px;
+        }
+
+        /* ===== REPORT STATS ===== */
+        .report-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .rpt-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px 20px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+
+        .rpt-label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .rpt-val {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .rpt-unit {
+            font-size: 18px;
+            color: #999;
+            margin-left: 2px;
+        }
+
+        .rpt-sub {
+            font-size: 12px;
+            color: #bbb;
+            margin-top: 8px;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-bg.show { display: flex; }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 400px;
+            max-width: 95vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal h2 { font-size: 16px; margin-bottom: 20px; color: #333; }
+
+        .fg { margin-bottom: 16px; }
+
+        .fg label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: #777;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .fg input[type="text"],
+        .fg input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .fg input:focus {
+            outline: none;
+            border-color: #1565c0;
+            box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+        }
+
+        .dow-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .dow-btn {
+            aspect-ratio: 1;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #bbb;
+        }
+        .dow-btn.sel { background: #1565c0; border-color: #1565c0; color: white; }
+
+        .modal-ft {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+        }
+        .btn-p { background: #1565c0; color: white; }
+        .btn-p:hover { background: #0d47a1; }
+        .btn-g { background: #f5f5f5; color: #555; border: 1px solid #ddd; }
+        .btn-g:hover { background: #eee; }
+
+        /* ===== RESPONSIVE: TABLET ===== */
+        @media (max-width: 900px) {
+            .cards { grid-template-columns: repeat(2, 1fr); }
+            .report-stats { grid-template-columns: repeat(3, 1fr); }
+            .rpt-val { font-size: 40px; }
+        }
+
+        /* ===== RESPONSIVE: MOBILE ===== */
+        @media (max-width: 600px) {
+            /* Header */
+            header {
+                flex-wrap: wrap;
+                height: auto;
+                padding: 8px 12px;
+                gap: 4px;
+            }
+            .header-left { order: 1; flex: 1; }
+            .header-left .icon { font-size: 18px; }
+            .header-left .app-title { display: none; }
+            #facilityNameDisp { font-size: 13px; }
+            .month-nav { order: 3; width: 100%; justify-content: center; padding-top: 4px; }
+            #monthDisp { font-size: 16px; min-width: 110px; }
+            .nav-btn { width: 36px; height: 36px; font-size: 16px; }
+            .header-right { order: 2; }
+            .hdr-btn { padding: 6px 10px; }
+
+            /* Main */
+            main { padding: 10px 6px; }
+
+            /* Summary Cards */
+            .cards { grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px; }
+            .card { padding: 10px 10px; }
+            .card-val { font-size: 28px; }
+            .card-unit { font-size: 12px; }
+            .card-label { font-size: 10px; }
+            .card-sub { font-size: 9px; }
+
+            /* Tabs */
+            .tabs { margin-bottom: 10px; }
+            .tab { padding: 10px 6px; font-size: 13px; }
+
+            /* Table */
+            .tbl-head { padding: 8px 10px; font-size: 12px; }
+            .tbl-wrap { -webkit-overflow-scrolling: touch; }
+            table { font-size: 12px; }
+            th { padding: 7px 4px; font-size: 10px; }
+            td { padding: 5px 3px; }
+
+            /* Sticky date + day columns on mobile */
+            thead th:nth-child(1),
+            tbody td:nth-child(1) {
+                position: sticky;
+                left: 0;
+                z-index: 2;
+                background: inherit;
+            }
+            thead th:nth-child(1) { background: #f8f9fa; }
+            .row-holiday td:nth-child(1) { background: #fafafa; }
+            tr:not(.row-holiday) td:nth-child(1) { background: white; }
+
+            /* Bigger touch targets for inputs */
+            .inp {
+                width: 48px;
+                padding: 8px 2px;
+                font-size: 16px;
+                border-radius: 6px;
+            }
+            .note-inp {
+                width: 70px;
+                padding: 8px 4px;
+                font-size: 14px;
+                border-radius: 6px;
+            }
+            .act-cell { font-size: 15px; }
+            .pill { font-size: 10px; padding: 3px 6px; min-width: 46px; }
+            .tog { font-size: 10px; padding: 4px 6px; }
+
+            /* Report Stats */
+            .report-stats { grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
+            .rpt-card { padding: 16px 14px; }
+            .rpt-val { font-size: 44px; }
+            .rpt-unit { font-size: 16px; }
+            .rpt-sub { font-size: 11px; }
+
+            /* Chart */
+            .chart-card { padding: 10px; }
+            .chart-title { font-size: 12px; margin-bottom: 10px; }
+
+            /* Modal */
+            .modal { padding: 18px; }
+            .modal h2 { font-size: 15px; margin-bottom: 16px; }
+            .fg input[type="text"],
+            .fg input[type="number"] { padding: 10px; font-size: 16px; }
+            .dow-btn { font-size: 14px; }
+            .btn { padding: 10px 18px; font-size: 14px; }
+        }
+
+        /* ===== RESPONSIVE: SMALL MOBILE ===== */
+        @media (max-width: 380px) {
+            .cards { grid-template-columns: 1fr; }
+            .card-val { font-size: 32px; }
+            .inp { width: 42px; font-size: 15px; }
+            .note-inp { width: 60px; }
+            #monthDisp { font-size: 15px; }
+        }
+
+        @media print {
+            header, .tabs { display: none !important; }
+            .cards, #reportTab { display: block !important; }
+            .chart-card { box-shadow: none; border: 1px solid #ddd; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-left">
-    <span style="font-size:20px">🩺</span>
-    <span class="header-title">バイタル記録</span>
-  </div>
-  <div class="header-right" id="hdr-clock"></div>
+<header>
+    <div class="header-left">
+        <span class="icon">&#127970;</span>
+        <div class="titles">
+            <div class="app-title">デイサービス稼働率管理</div>
+            <div id="facilityNameDisp">施設名</div>
+        </div>
+    </div>
+    <div class="month-nav">
+        <button class="nav-btn" onclick="changeMonth(-1)" title="前月">&#9664;</button>
+        <span id="monthDisp"></span>
+        <button class="nav-btn" onclick="changeMonth(1)" title="次月">&#9654;</button>
+    </div>
+    <div class="header-right">
+        <button class="hdr-btn" onclick="openSettings()">&#9881; 設定</button>
+    </div>
+</header>
+
+<main>
+    <!-- Summary Cards -->
+    <div class="cards">
+        <div class="card">
+            <div class="card-label">月次稼働率</div>
+            <div class="card-val"><span id="vRate" style="color:#1565c0">--</span><span class="card-unit">%</span></div>
+            <div class="card-sub" id="vRateSub"></div>
+        </div>
+        <div class="card">
+            <div class="card-label">延利用者数</div>
+            <div class="card-val"><span id="vTotal" style="color:#2e7d32">--</span><span class="card-unit">人</span></div>
+            <div class="card-sub" id="vTotalSub"></div>
+        </div>
+        <div class="card">
+            <div class="card-label">営業日数</div>
+            <div class="card-val"><span id="vDays" style="color:#f57f17">--</span><span class="card-unit">日</span></div>
+            <div class="card-sub" id="vDaysSub"></div>
+        </div>
+        <div class="card">
+            <div class="card-label">欠席者数合計</div>
+            <div class="card-val"><span id="vAbsent" style="color:#c62828">--</span><span class="card-unit">人</span></div>
+            <div class="card-sub" id="vAbsentSub"></div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" id="tabInput" onclick="switchTab('input')">&#128221; 日別入力</button>
+        <button class="tab" id="tabReport" onclick="switchTab('report')">&#128202; 月次レポート</button>
+    </div>
+
+    <!-- Input Tab -->
+    <div id="inputTab">
+        <div class="tbl-card">
+            <div class="tbl-head">日別利用者数入力 &#8212; 定員: <span id="capDisp">--</span>人</div>
+            <div class="tbl-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>曜</th>
+                            <th>予定<br>人数</th>
+                            <th>欠席<br>者数</th>
+                            <th>振替可能<br>欠席</th>
+                            <th>振替<br>利用</th>
+                            <th>実利用<br>者数</th>
+                            <th>稼働率</th>
+                            <th>備考</th>
+                            <th>状態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Tab -->
+    <div id="reportTab" style="display:none">
+        <!-- 月次サマリー数値 -->
+        <div class="report-stats" id="reportStats"></div>
+        <!-- グラフ -->
+        <div class="chart-card">
+            <div class="chart-title">&#128200; 日別利用者数・稼働率グラフ</div>
+            <canvas id="mainChart"></canvas>
+        </div>
+    </div>
+</main>
+
+<!-- Settings Modal -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeSettings()">
+    <div class="modal">
+        <h2>&#9881; 設定</h2>
+        <div class="fg">
+            <label>施設名</label>
+            <input type="text" id="sName" placeholder="デイサービス○○">
+        </div>
+        <div class="fg">
+            <label>定員（人）</label>
+            <input type="number" id="sCap" min="1" max="300" placeholder="20">
+        </div>
+        <div class="fg">
+            <label>目標稼働率（%）</label>
+            <input type="number" id="sTarget" min="1" max="100" placeholder="80">
+        </div>
+        <div class="fg">
+            <label>通常営業曜日</label>
+            <div class="dow-grid" id="dowGrid">
+                <button class="dow-btn" data-d="0">日</button>
+                <button class="dow-btn" data-d="1">月</button>
+                <button class="dow-btn" data-d="2">火</button>
+                <button class="dow-btn" data-d="3">水</button>
+                <button class="dow-btn" data-d="4">木</button>
+                <button class="dow-btn" data-d="5">金</button>
+                <button class="dow-btn" data-d="6">土</button>
+            </div>
+        </div>
+        <div class="modal-ft">
+            <button class="btn btn-g" onclick="closeSettings()">キャンセル</button>
+            <button class="btn btn-p" onclick="saveSettings()">保存</button>
+        </div>
+    </div>
 </div>
 
-<nav class="nav">
-  <button class="nav-tab active" onclick="gotoTab('dashboard')" id="ntab-dashboard">📊 今日の一覧</button>
-  <button class="nav-tab" onclick="gotoTab('scan')" id="ntab-scan">📷 名簿読取</button>
-  <button class="nav-tab" onclick="gotoTab('record')" id="ntab-record">✏️ 記録</button>
-  <button class="nav-tab" onclick="gotoTab('history')" id="ntab-history">📋 履歴・CSV</button>
-  <button class="nav-tab" onclick="gotoTab('residents')" id="ntab-residents">👥 利用者</button>
-</nav>
-
-<div class="main">
-
-  <!-- ===== DASHBOARD ===== -->
-  <div id="tab-dashboard">
-    <div class="today-header">
-      <div class="today-date-label" id="today-label"></div>
-      <button class="btn btn-secondary btn-sm" onclick="gotoTab('scan')">📷 名簿を撮影して読み込む</button>
-    </div>
-    <div class="stats-row" id="stats-row"></div>
-    <div id="alert-area"></div>
-    <div class="sec-title">本日の測定対象者</div>
-    <div class="resident-grid" id="dash-grid"></div>
-  </div>
-
-  <!-- ===== SCAN TAB ===== -->
-  <div id="tab-scan" style="display:none">
-    <div class="card">
-      <div class="card-title"><span class="card-title-accent"></span>📷 名簿を撮影・読み込む</div>
-
-      <div class="info-box">
-        📋 介護ソフトから印刷した名簿をカメラで撮影、またはファイルを選択してください。<br>
-        AIが氏名・部屋番号・年齢・性別を自動で読み取ります。内容を確認・編集してから登録できます。
-      </div>
-
-      <!-- Step 1: Upload -->
-      <div id="scan-step1">
-        <div class="scan-zone" onclick="document.getElementById('img-input').click()">
-          <input type="file" id="img-input" accept="image/*" capture="environment" onchange="handleImage(event)">
-          <div class="scan-icon">📷</div>
-          <div class="scan-title">タップして撮影 / ファイルを選択</div>
-          <div class="scan-sub">カメラで名簿を撮影、またはギャラリーから画像を選択</div>
-        </div>
-      </div>
-
-      <!-- Step 2: Preview & AI loading -->
-      <div id="scan-step2" style="display:none">
-        <img id="scan-preview" class="preview-img" src="" alt="プレビュー">
-        <div id="ai-status"></div>
-      </div>
-
-      <!-- Step 3: Edit & Confirm -->
-      <div id="scan-step3" style="display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-          <div style="font-size:13px;font-weight:700;color:var(--teal)">✅ 読み取り結果を確認・編集してください</div>
-          <button class="btn btn-secondary btn-sm" onclick="addParsedRow()">＋ 行を追加</button>
-        </div>
-        <div class="parsed-header">
-          <span>氏名</span><span>年齢</span><span>性別</span><span>部屋番号</span><span></span>
-        </div>
-        <div class="parsed-list" id="parsed-list"></div>
-        <div style="background:var(--orange-light);border:1px solid #f5cfa0;border-radius:var(--radius-sm);padding:10px 14px;font-size:12px;color:var(--orange);margin-bottom:16px">
-          ⚠️ <strong>本日の名簿として登録すると、前日の名簿は置き換えられます。</strong>バイタル記録データは残ります。
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="resetScan()">撮り直す</button>
-          <button class="btn btn-primary" onclick="confirmImport()">📋 今日の名簿として登録</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== RECORD TAB ===== -->
-  <div id="tab-record" style="display:none">
-    <div class="card">
-      <div class="card-title"><span class="card-title-accent"></span>利用者を選択</div>
-      <div class="resident-grid" id="rec-res-grid"></div>
-    </div>
-    <div id="rec-form-wrap" style="display:none">
-      <div class="card">
-        <div class="card-title"><span class="card-title-accent"></span><span id="rec-form-title">バイタル入力</span></div>
-        <div style="margin-bottom:14px">
-          <label class="form-label">測定日時</label>
-          <input type="datetime-local" class="dt-input" id="f-dt" style="max-width:260px">
-        </div>
-        <div class="form-row">
-          <div>
-            <label class="form-label">体温</label>
-            <div class="input-group"><input type="number" id="f-temp" step="0.1" min="34" max="42" placeholder="36.5" oninput="checkTempStyle()"></div>
-            <div class="input-unit">℃</div>
-            <div class="ref-table">
-              <span class="ref-item"><span class="ref-dot" style="background:var(--orange)"></span>37.5以上</span>
-              <span class="ref-item"><span class="ref-dot" style="background:var(--red)"></span>38.0以上</span>
-            </div>
-          </div>
-          <div>
-            <label class="form-label">血圧（収縮期 / 拡張期）</label>
-            <div class="bp-inputs">
-              <div class="input-group"><input type="number" id="f-bp-sys" placeholder="120" min="60" max="260" oninput="checkBpStyle()"></div>
-              <span class="bp-sep">/</span>
-              <div class="input-group"><input type="number" id="f-bp-dia" placeholder="80" min="40" max="160"></div>
-            </div>
-            <div class="input-unit">mmHg</div>
-            <div class="ref-table">
-              <span class="ref-item"><span class="ref-dot" style="background:var(--orange)"></span>収縮期 140以上</span>
-              <span class="ref-item"><span class="ref-dot" style="background:var(--red)"></span>160以上</span>
-            </div>
-          </div>
-          <div>
-            <label class="form-label">脈拍</label>
-            <div class="input-group"><input type="number" id="f-pulse" placeholder="70" min="30" max="200" oninput="checkPulseStyle()"></div>
-            <div class="input-unit">回 / 分</div>
-            <div class="ref-table">
-              <span class="ref-item"><span class="ref-dot" style="background:var(--orange)"></span>100以上 / 50以下</span>
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:16px">
-          <label class="form-label">特記事項</label>
-          <textarea class="note-input" id="f-note" rows="2" placeholder="気になる症状、申し送り事項など…"></textarea>
-        </div>
-        <div class="form-footer">
-          <button class="btn btn-secondary" onclick="clearForm()">クリア</button>
-          <button class="btn btn-primary" onclick="saveRecord()">💾 保存する</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== HISTORY ===== -->
-  <div id="tab-history" style="display:none">
-    <div class="card">
-      <div class="card-title"><span class="card-title-accent"></span>記録履歴・CSV出力</div>
-      <div class="info-box">📤 フィルタした内容をCSVでダウンロードできます。介護ソフトへのインポートにご活用ください。</div>
-      <div class="filter-bar">
-        <select id="h-res-filter" onchange="renderHistory()"><option value="">全利用者</option></select>
-        <input type="date" id="h-date-from" onchange="renderHistory()">
-        <span style="align-self:center;color:var(--muted);font-size:12px">〜</span>
-        <input type="date" id="h-date-to" onchange="renderHistory()">
-        <button class="btn btn-secondary btn-sm" onclick="clearFilter()">リセット</button>
-        <button class="btn btn-csv" onclick="exportCSV()">📥 CSVダウンロード</button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>日時</th><th>利用者</th><th>部屋</th><th>体温</th><th>血圧</th><th>脈拍</th><th>状態</th><th>特記</th><th></th></tr></thead>
-          <tbody id="hist-tbody"></tbody>
-        </table>
-        <div id="hist-empty" class="empty" style="display:none"><div class="empty-icon">📋</div><div>該当する記録がありません</div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ===== RESIDENTS ===== -->
-  <div id="tab-residents" style="display:none">
-    <div class="card">
-      <div class="card-title"><span class="card-title-accent"></span>利用者を手動追加</div>
-      <div class="add-form">
-        <input type="text" id="r-name" placeholder="氏名">
-        <input type="number" id="r-age" placeholder="年齢">
-        <select id="r-gender"><option value="女性">女性</option><option value="男性">男性</option><option value="その他">その他</option></select>
-        <input type="text" id="r-room" placeholder="部屋番号">
-      </div>
-      <div style="margin-top:12px;display:flex;justify-content:flex-end">
-        <button class="btn btn-primary btn-sm" onclick="addResident()">＋ 追加</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title"><span class="card-title-accent"></span>登録済み利用者</div>
-      <div id="res-manage-list"></div>
-    </div>
-  </div>
-
-</div><!-- /main -->
-
 <script>
-// ===================== CONSTANTS =====================
-const COLORS = [
-  {bg:'#fde8e4',fg:'#bf3b2e'},{bg:'#dce8f8',fg:'#2256a8'},
-  {bg:'#e2f0e2',fg:'#2a7a42'},{bg:'#fdf0dc',fg:'#c96a1a'},
-  {bg:'#ecddf8',fg:'#6a30b0'},{bg:'#fde4f4',fg:'#a8286e'},
-  {bg:'#daf0f5',fg:'#1a7a90'},{bg:'#f0f0dc',fg:'#7a7a20'},
-];
+// ===== STATE =====
+const DNAMES = ['日','月','火','水','木','金','土'];
+const SK = 'ds_set_v1', RK = 'ds_rec_v1';
 
-// ===================== STATE =====================
-let residents = JSON.parse(localStorage.getItem('vc3_residents') || 'null');
-let records   = JSON.parse(localStorage.getItem('vc3_records')   || '[]');
-// todayList: [{name,age,gender,room}] — replaces each day
-let todayList = JSON.parse(localStorage.getItem('vc3_todayList') || 'null');
-let todayDate = localStorage.getItem('vc3_todayDate') || '';
+let cYear = new Date().getFullYear();
+let cMonth = new Date().getMonth() + 1;
+let curTab = 'input';
+let chart = null;
 
-// default sample data
-if (!residents) {
-  residents = [
-    {id:'r1',name:'山田 花子',age:82,gender:'女性',room:'101',ci:0},
-    {id:'r2',name:'田中 一郎',age:76,gender:'男性',room:'102',ci:1},
-    {id:'r3',name:'鈴木 幸子',age:88,gender:'女性',room:'103',ci:2},
-    {id:'r4',name:'佐藤 正男',age:71,gender:'男性',room:'104',ci:3},
-  ];
-  save();
-}
+let S = {
+    facilityName: 'デイサービス',
+    capacity: 20,
+    opDays: [1, 2, 3, 4, 5],
+    targetRate: 80
+};
 
-// If today list matches today's date, use it; otherwise clear
-const todayStr = new Date().toISOString().slice(0,10);
-if (todayDate !== todayStr) {
-  todayList = null;
-  localStorage.removeItem('vc3_todayList');
-  localStorage.removeItem('vc3_todayDate');
+let R = {}; // { "YYYY-MM-DD": { scheduled, absent, substitute, note, isHoliday } }
+
+// ===== STORAGE =====
+function load() {
+    try {
+        const s = localStorage.getItem(SK);
+        if (s) S = { ...S, ...JSON.parse(s) };
+        const r = localStorage.getItem(RK);
+        if (r) R = JSON.parse(r);
+    } catch(e) {}
 }
 
 function save() {
-  localStorage.setItem('vc3_residents', JSON.stringify(residents));
-  localStorage.setItem('vc3_records',   JSON.stringify(records));
-}
-function saveTodayList(list) {
-  todayList = list;
-  todayDate = todayStr;
-  localStorage.setItem('vc3_todayList', JSON.stringify(list));
-  localStorage.setItem('vc3_todayDate', todayDate);
+    localStorage.setItem(SK, JSON.stringify(S));
+    localStorage.setItem(RK, JSON.stringify(R));
 }
 
-// ===================== CLOCK =====================
-function clock() {
-  const n = new Date();
-  document.getElementById('hdr-clock').textContent =
-    n.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'}) + ' ' +
-    n.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-}
-clock(); setInterval(clock, 30000);
-
-// ===================== STATUS =====================
-function statusOf(rec) {
-  if (!rec) return 'none';
-  const temp=parseFloat(rec.temp), bpSys=parseInt(rec.bpSys), pulse=parseInt(rec.pulse);
-  let lvl='ok';
-  const up=(v,w,al)=>{if(v>=al)lvl='alert';else if(v>=w&&lvl!=='alert')lvl='warn';};
-  const dn=(v,w,al)=>{if(v<=al)lvl='alert';else if(v<=w&&lvl!=='alert')lvl='warn';};
-  if(!isNaN(temp)) {up(temp,37.5,38.0);dn(temp,35.5,35.0);}
-  if(!isNaN(bpSys)){up(bpSys,140,160);dn(bpSys,100,90);}
-  if(!isNaN(pulse)){up(pulse,100,120);dn(pulse,55,45);}
-  return lvl;
-}
-function chipOf(s) {
-  if(s==='alert')return'<span class="chip chip-alert">⚠ 要注意</span>';
-  if(s==='warn') return'<span class="chip chip-warn">△ 注意</span>';
-  if(s==='ok')   return'<span class="chip chip-ok">○ 正常</span>';
-  return'<span class="chip chip-none">未測定</span>';
-}
-function latestOf(rid) {
-  return records.filter(r=>r.rid===rid).sort((a,b)=>b.dt.localeCompare(a.dt))[0];
-}
-function fmtDt(s) {
-  const d=new Date(s);
-  return d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})+' '+
-         d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+// ===== HELPERS =====
+function rec(ds) {
+    return R[ds] || { scheduled: 0, absent: 0, transferableAbsent: 0, substitute: 0, note: '', isHoliday: null };
 }
 
-// ===================== TABS =====================
-function gotoTab(t) {
-  ['dashboard','scan','record','history','residents'].forEach(x=>{
-    document.getElementById('tab-'+x).style.display = x===t?'':'none';
-    document.getElementById('ntab-'+x).classList.toggle('active',x===t);
-  });
-  if(t==='dashboard') renderDash();
-  if(t==='record')    renderRecTab();
-  if(t==='history')   renderHistory();
-  if(t==='residents') renderResidents();
-}
-
-// ===================== ACTIVE RESIDENTS =====================
-// Returns the list shown on dashboard:
-// If todayList exists → match with residents (or create temp entries)
-// Otherwise → all residents
-function getActiveResidents() {
-  if (todayList && todayList.length) {
-    return todayList.map(item => {
-      // Try to find matching resident
-      const match = residents.find(r =>
-        r.name === item.name ||
-        (r.room && r.room === item.room)
-      );
-      if (match) return match;
-      // Return a temporary entry (not in residents array)
-      return {
-        id: 'tmp_' + item.name,
-        name: item.name,
-        age: item.age,
-        gender: item.gender,
-        room: item.room,
-        ci: Math.abs(item.name.charCodeAt(0)) % COLORS.length,
-        _temp: true,
-      };
-    });
-  }
-  return residents;
-}
-
-// ===================== DASHBOARD =====================
-function renderDash() {
-  const today = new Date().toISOString().slice(0,10);
-  const label = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
-  document.getElementById('today-label').textContent = label;
-
-  const active = getActiveResidents();
-  const todayRecs = records.filter(r=>r.dt.startsWith(today));
-  const alertN = active.filter(r=>statusOf(latestOf(r.id))==='alert').length;
-
-  document.getElementById('stats-row').innerHTML = `
-    <div class="stat-box"><div class="stat-num">${todayRecs.length}</div><div class="stat-label">本日の測定件数</div></div>
-    <div class="stat-box"><div class="stat-num red">${alertN}</div><div class="stat-label">要注意・異常値</div></div>
-    <div class="stat-box"><div class="stat-num">${active.length}</div><div class="stat-label">本日の対象者数</div></div>
-  `;
-
-  let alertHtml = '';
-  active.forEach(r=>{
-    if(statusOf(latestOf(r.id))==='alert')
-      alertHtml+=`<div class="alert-banner">⚠️ <strong>${r.name}</strong> さん（${r.room}号室）に異常値があります。</div>`;
-  });
-  document.getElementById('alert-area').innerHTML = alertHtml;
-
-  const grid = document.getElementById('dash-grid');
-  if(!active.length){
-    grid.innerHTML=`<div class="empty" style="grid-column:1/-1">
-      <div class="empty-icon">📷</div>
-      <div style="margin-bottom:12px">名簿が読み込まれていません</div>
-      <button class="btn btn-primary btn-sm" onclick="gotoTab('scan')">📷 名簿を読み込む</button>
-    </div>`;
-    return;
-  }
-  grid.innerHTML = active.map(r=>{
-    const lr=latestOf(r.id), s=statusOf(lr), c=COLORS[r.ci%COLORS.length];
-    const hasTodayRec = lr && lr.dt.startsWith(today);
-    const pills = lr ? `
-      <span class="res-vital-pill ${s==='alert'?'pill-alert':s==='warn'?'pill-warn':'pill-ok'}">${lr.temp}℃</span>
-      ${lr.bpSys?`<span class="res-vital-pill ${s==='alert'?'pill-alert':s==='warn'?'pill-warn':'pill-ok'}">${lr.bpSys}/${lr.bpDia}</span>`:''}
-      ${lr.pulse?`<span class="res-vital-pill ${s==='alert'?'pill-alert':s==='warn'?'pill-warn':'pill-ok'}">💓${lr.pulse}</span>`:''}
-    `:'';
-    return `<div class="res-card" onclick="jumpRecord('${r.id}','${r.name}',${r.age},'${r.gender}','${r.room}',${r.ci})">
-      <div class="res-top">
-        <div class="res-avatar" style="background:${c.bg};color:${c.fg}">${r.name.charAt(0)}</div>
-        <div>
-          <div class="res-name">${r.name}</div>
-          <div class="res-meta">${r.age||''}歳 ${r.gender||''}・${r.room||''}号室</div>
-        </div>
-      </div>
-      <div class="res-vitals">
-        ${chipOf(s)}
-        ${hasTodayRec?'<span class="today-badge">✓ 測定済</span>':''}
-        ${pills}
-      </div>
-      <div class="res-time">${lr?'最終：'+fmtDt(lr.dt):'未測定'}</div>
-    </div>`;
-  }).join('');
-}
-
-function jumpRecord(id,name,age,gender,room,ci) {
-  // Ensure resident exists
-  let res = residents.find(r=>r.id===id);
-  if (!res && id.startsWith('tmp_')) {
-    res = {id:'r'+Date.now(), name, age:parseInt(age)||0, gender, room, ci:parseInt(ci)||0};
-    residents.push(res);
+function setField(ds, k, v) {
+    if (!R[ds]) R[ds] = {};
+    R[ds][k] = v;
     save();
-  }
-  gotoTab('record');
-  setTimeout(()=>selectRes(res ? res.id : id), 50);
 }
 
-// ===================== SCAN =====================
-let parsedRows = [];
-let capturedBase64 = '';
-
-function handleImage(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const dataUrl = ev.target.result;
-    capturedBase64 = dataUrl.split(',')[1];
-    document.getElementById('scan-step1').style.display='none';
-    document.getElementById('scan-step2').style.display='';
-    document.getElementById('scan-preview').src = dataUrl;
-    document.getElementById('scan-step3').style.display='none';
-    runOCR(capturedBase64);
-  };
-  reader.readAsDataURL(file);
+function isHoliday(ds, dow) {
+    const r = R[ds];
+    if (r && r.isHoliday !== null && r.isHoliday !== undefined) return r.isHoliday;
+    return !S.opDays.includes(dow);
 }
 
-async function runOCR(base64) {
-  document.getElementById('ai-status').innerHTML =
-    '<div class="ai-loading"><div class="spinner"></div>AIが名簿を読み取っています…</div>';
+function actual(r) {
+    return Math.max(0, (r.scheduled || 0) - (r.absent || 0));
+}
 
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: 'image/jpeg', data: base64 }
-            },
-            {
-              type: 'text',
-              text: `この画像は介護事業所の利用者名簿です。画像から利用者の情報を読み取り、必ずJSONのみで返してください。マークダウンや説明文は一切含めないでください。
+function dRate(a) {
+    return S.capacity > 0 ? (a / S.capacity * 100) : 0;
+}
 
-フォーマット:
-[
-  {"name":"氏名","age":年齢の数値,"gender":"男性または女性","room":"部屋番号"},
-  ...
-]
+function pillCls(r) {
+    if (r >= 90) return 'pill-a';
+    if (r >= 80) return 'pill-b';
+    if (r >= 70) return 'pill-c';
+    if (r >= 50) return 'pill-d';
+    return 'pill-e';
+}
 
-- 氏名が読み取れた人すべてを含める
-- 年齢が不明なら0、性別が不明なら"不明"、部屋番号が不明なら""とする
-- JSONのみ出力すること`
-            }
-          ]
-        }]
-      })
+function monthDays(y, m) {
+    const n = new Date(y, m, 0).getDate();
+    const out = [];
+    for (let d = 1; d <= n; d++) {
+        const dt = new Date(y, m - 1, d);
+        const mm = String(m).padStart(2, '0');
+        const dd = String(d).padStart(2, '0');
+        out.push({ d, dt, ds: `${y}-${mm}-${dd}`, dow: dt.getDay() });
+    }
+    return out;
+}
+
+function summary() {
+    const days = monthDays(cYear, cMonth);
+    let tAct = 0, tAbs = 0, tTrAbs = 0, tSub = 0, opCnt = 0, clCnt = 0;
+    days.forEach(({ ds, dow }) => {
+        if (isHoliday(ds, dow)) { clCnt++; return; }
+        opCnt++;
+        const r = rec(ds);
+        tAct += actual(r);
+        tAbs += (r.absent || 0);
+        tTrAbs += (r.transferableAbsent || 0);
+        tSub += (r.substitute || 0);
+    });
+    const max = S.capacity * opCnt;
+    const rate = max > 0 ? (tAct / max * 100) : 0;
+    return { tAct, tAbs, tTrAbs, tSub, opCnt, clCnt, rate, max };
+}
+
+// ===== RENDER TABLE =====
+function renderTable() {
+    const days = monthDays(cYear, cMonth);
+    const tb = document.getElementById('tbody');
+    tb.innerHTML = '';
+
+    days.forEach(({ d, ds, dow }) => {
+        const hol = isHoliday(ds, dow);
+        const r = rec(ds);
+        const a = hol ? 0 : actual(r);
+        const rt = hol ? null : dRate(a);
+
+        let cls = '';
+        if (hol) cls = 'row-holiday';
+        else if (dow === 0) cls = 'row-sunday';
+        else if (dow === 6) cls = 'row-saturday';
+
+        const tr = document.createElement('tr');
+        tr.className = cls;
+
+        tr.innerHTML = `
+            <td class="c-date">${cMonth}/${String(d).padStart(2,'0')}</td>
+            <td class="c-dow">${DNAMES[dow]}</td>
+            <td><input type="number" class="inp" value="${r.scheduled || ''}" min="0" placeholder="0"
+                ${hol ? 'disabled' : ''} oninput="onInp('${ds}','scheduled',this.value)"></td>
+            <td><input type="number" class="inp" value="${r.absent || ''}" min="0" placeholder="0"
+                ${hol ? 'disabled' : ''} oninput="onInp('${ds}','absent',this.value)"></td>
+            <td><input type="number" class="inp" value="${r.transferableAbsent || ''}" min="0" placeholder="0"
+                ${hol ? 'disabled' : ''} oninput="onInp('${ds}','transferableAbsent',this.value)"></td>
+            <td><input type="number" class="inp" value="${r.substitute || ''}" min="0" placeholder="0"
+                ${hol ? 'disabled' : ''} oninput="onInp('${ds}','substitute',this.value)"></td>
+            <td class="act-cell" id="a-${ds}">${hol ? '—' : a}</td>
+            <td id="r-${ds}">${hol ? '—' : `<span class="pill ${pillCls(rt)}">${rt.toFixed(1)}%</span>`}</td>
+            <td><input type="text" class="note-inp" value="${r.note || ''}" placeholder="備考"
+                oninput="onInp('${ds}','note',this.value)"></td>
+            <td><button class="tog ${hol ? 'tog-closed' : 'tog-open'}"
+                onclick="togHol('${ds}',${dow})">${hol ? '休業' : '営業'}</button></td>
+        `;
+        tb.appendChild(tr);
+    });
+}
+
+// ===== INPUT HANDLER =====
+function onInp(ds, k, v) {
+    setField(ds, k, k === 'note' ? v : (parseInt(v) || 0));
+
+    const r = rec(ds);
+    const a = actual(r);
+    const rt = dRate(a);
+
+    const ae = document.getElementById('a-' + ds);
+    const re = document.getElementById('r-' + ds);
+    if (ae) ae.textContent = a;
+    if (re) re.innerHTML = `<span class="pill ${pillCls(rt)}">${rt.toFixed(1)}%</span>`;
+
+    updateCards();
+}
+
+// ===== TOGGLE HOLIDAY =====
+function togHol(ds, dow) {
+    const cur = isHoliday(ds, dow);
+    setField(ds, 'isHoliday', !cur);
+    renderTable();
+    updateCards();
+    if (curTab === 'report') { renderReportStats(); renderChart(); }
+}
+
+// ===== SUMMARY CARDS =====
+function updateCards() {
+    const s = summary();
+
+    const rEl = document.getElementById('vRate');
+    rEl.textContent = s.rate.toFixed(1);
+    rEl.style.color = s.rate >= 80 ? '#2e7d32' : s.rate >= 70 ? '#1565c0' : s.rate >= 50 ? '#f57f17' : '#c62828';
+
+    document.getElementById('vTotal').textContent = s.tAct;
+    document.getElementById('vDays').textContent = s.opCnt;
+    document.getElementById('vAbsent').textContent = s.tAbs;
+
+    document.getElementById('vRateSub').textContent = `目標: ${S.targetRate}% / 最大: ${s.max}人`;
+    document.getElementById('vTotalSub').textContent = `定員 ${S.capacity}人 × ${s.opCnt}日`;
+    document.getElementById('vDaysSub').textContent = `休業日: ${s.clCnt}日`;
+    document.getElementById('vAbsentSub').textContent = `振替可能: ${s.tTrAbs}人 / 振替利用: ${s.tSub}人`;
+}
+
+// ===== REPORT STATS =====
+function renderReportStats() {
+    const s = summary();
+    const rateColor = s.rate >= 80 ? '#2e7d32' : s.rate >= 70 ? '#1565c0' : s.rate >= 50 ? '#f57f17' : '#c62828';
+
+    document.getElementById('reportStats').innerHTML = `
+        <div class="rpt-card">
+            <div class="rpt-label">月次稼働率</div>
+            <div class="rpt-val" style="color:${rateColor}">${s.rate.toFixed(1)}<span class="rpt-unit">%</span></div>
+            <div class="rpt-sub">目標: ${S.targetRate}% / 延利用: ${s.tAct}人 / 最大: ${s.max}人</div>
+        </div>
+        <div class="rpt-card">
+            <div class="rpt-label">振替可能欠席者数</div>
+            <div class="rpt-val" style="color:#e65100">${s.tTrAbs}<span class="rpt-unit">人</span></div>
+            <div class="rpt-sub">欠席者合計: ${s.tAbs}人</div>
+        </div>
+        <div class="rpt-card">
+            <div class="rpt-label">振替利用者数</div>
+            <div class="rpt-val" style="color:#1565c0">${s.tSub}<span class="rpt-unit">人</span></div>
+            <div class="rpt-sub">営業日数: ${s.opCnt}日 / 定員: ${S.capacity}人</div>
+        </div>
+    `;
+}
+
+// ===== CHART =====
+function renderChart() {
+    const days = monthDays(cYear, cMonth);
+    const labels = [], actArr = [], schArr = [], rateArr = [];
+
+    days.forEach(({ d, ds, dow }) => {
+        if (isHoliday(ds, dow)) return;
+        const r = rec(ds);
+        const a = actual(r);
+        labels.push(`${d}日`);
+        actArr.push(a);
+        schArr.push(r.scheduled || 0);
+        rateArr.push(parseFloat(dRate(a).toFixed(1)));
     });
 
-    const data = await resp.json();
-    const text = (data.content || []).map(c=>c.text||'').join('');
-    let parsed = [];
-    try {
-      const clean = text.replace(/```json|```/g,'').trim();
-      parsed = JSON.parse(clean);
-    } catch(e) {
-      // Try to extract JSON array from text
-      const m = text.match(/\[[\s\S]*\]/);
-      if (m) parsed = JSON.parse(m[0]);
-    }
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    if (chart) { chart.destroy(); chart = null; }
 
-    if (!Array.isArray(parsed) || !parsed.length) throw new Error('読み取りに失敗しました');
+    const maxA = actArr.length ? Math.max(...actArr) : 0;
+    const maxS = schArr.length ? Math.max(...schArr) : 0;
+    const yMax = Math.max(S.capacity + 3, maxA, maxS, 1);
 
-    parsedRows = parsed.map((p,i) => ({...p, _key: i}));
-    showStep3();
-  } catch(err) {
-    document.getElementById('ai-status').innerHTML =
-      `<div style="color:var(--red);padding:16px;text-align:center;font-size:13px">
-        ⚠️ 読み取りに失敗しました。画像をより明るく・まっすぐ撮影して再試行してください。<br>
-        <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="resetScan()">撮り直す</button>
-        <button class="btn btn-primary btn-sm" style="margin-top:12px;margin-left:8px" onclick="showManualEntry()">手動で入力</button>
-      </div>`;
-  }
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: [
+                {
+                    type: 'bar',
+                    label: '実利用者数',
+                    data: actArr,
+                    backgroundColor: 'rgba(21,101,192,0.6)',
+                    borderColor: 'rgba(21,101,192,1)',
+                    borderWidth: 1,
+                    yAxisID: 'yU',
+                    order: 2
+                },
+                {
+                    type: 'bar',
+                    label: '予定人数',
+                    data: schArr,
+                    backgroundColor: 'rgba(21,101,192,0.12)',
+                    borderColor: 'rgba(21,101,192,0.35)',
+                    borderWidth: 1,
+                    yAxisID: 'yU',
+                    order: 3
+                },
+                {
+                    type: 'line',
+                    label: '稼働率(%)',
+                    data: rateArr,
+                    borderColor: '#e53935',
+                    backgroundColor: 'rgba(229,57,53,0.06)',
+                    borderWidth: 2.5,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#e53935',
+                    yAxisID: 'yR',
+                    fill: true,
+                    order: 1
+                },
+                {
+                    type: 'line',
+                    label: '定員 (' + S.capacity + '人)',
+                    data: Array(labels.length).fill(S.capacity),
+                    borderColor: '#43a047',
+                    borderDash: [6, 4],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    yAxisID: 'yU',
+                    order: 4
+                },
+                {
+                    type: 'line',
+                    label: '目標 (' + S.targetRate + '%)',
+                    data: Array(labels.length).fill(S.targetRate),
+                    borderColor: '#fb8c00',
+                    borderDash: [6, 4],
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    yAxisID: 'yR',
+                    order: 5
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label(c) {
+                            return c.dataset.yAxisID === 'yR'
+                                ? `${c.dataset.label}: ${c.raw}%`
+                                : `${c.dataset.label}: ${c.raw}人`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                yU: {
+                    type: 'linear', position: 'left',
+                    title: { display: true, text: '利用者数（人）', font: { size: 11 } },
+                    min: 0, max: yMax,
+                    grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                yR: {
+                    type: 'linear', position: 'right',
+                    title: { display: true, text: '稼働率（%）', font: { size: 11 } },
+                    min: 0, max: 110,
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
 }
 
-function showStep3() {
-  document.getElementById('ai-status').innerHTML =
-    `<div style="color:var(--green);padding:8px 0;font-size:13px;font-weight:600">✅ ${parsedRows.length}名を読み取りました</div>`;
-  document.getElementById('scan-step3').style.display='';
-  renderParsedList();
+// ===== TAB =====
+function switchTab(t) {
+    curTab = t;
+    document.getElementById('inputTab').style.display = t === 'input' ? '' : 'none';
+    document.getElementById('reportTab').style.display = t === 'report' ? '' : 'none';
+    document.getElementById('tabInput').className = 'tab' + (t === 'input' ? ' active' : '');
+    document.getElementById('tabReport').className = 'tab' + (t === 'report' ? ' active' : '');
+    if (t === 'report') { renderReportStats(); renderChart(); }
 }
 
-function renderParsedList() {
-  const list = document.getElementById('parsed-list');
-  list.innerHTML = parsedRows.map((r,i)=>`
-    <div class="parsed-row" id="prow-${i}">
-      <input type="text" value="${r.name||''}" onchange="parsedRows[${i}].name=this.value" placeholder="氏名">
-      <input type="number" value="${r.age||''}" onchange="parsedRows[${i}].age=parseInt(this.value)||0" placeholder="年齢" min="1" max="120">
-      <select onchange="parsedRows[${i}].gender=this.value">
-        <option ${r.gender==='女性'?'selected':''}>女性</option>
-        <option ${r.gender==='男性'?'selected':''}>男性</option>
-        <option ${r.gender==='その他'||r.gender==='不明'?'selected':''}>その他</option>
-      </select>
-      <input type="text" value="${r.room||''}" onchange="parsedRows[${i}].room=this.value" placeholder="部屋番号">
-      <button class="parsed-del" onclick="removeParsedRow(${i})">✕</button>
-    </div>
-  `).join('');
+// ===== MONTH NAV =====
+function changeMonth(d) {
+    cMonth += d;
+    if (cMonth > 12) { cMonth = 1; cYear++; }
+    else if (cMonth < 1) { cMonth = 12; cYear--; }
+    refresh();
 }
 
-function removeParsedRow(i) {
-  parsedRows.splice(i,1);
-  renderParsedList();
+// ===== SETTINGS =====
+function openSettings() {
+    document.getElementById('sName').value = S.facilityName;
+    document.getElementById('sCap').value = S.capacity;
+    document.getElementById('sTarget').value = S.targetRate;
+    document.querySelectorAll('.dow-btn').forEach(b => {
+        b.classList.toggle('sel', S.opDays.includes(+b.dataset.d));
+    });
+    document.getElementById('modalBg').classList.add('show');
 }
 
-function addParsedRow() {
-  parsedRows.push({name:'',age:0,gender:'女性',room:''});
-  renderParsedList();
+function closeSettings() {
+    document.getElementById('modalBg').classList.remove('show');
 }
 
-function showManualEntry() {
-  parsedRows = [{name:'',age:0,gender:'女性',room:''}];
-  document.getElementById('scan-step2').style.display='none';
-  document.getElementById('scan-step3').style.display='';
-  document.getElementById('ai-status').innerHTML='';
-  renderParsedList();
-}
-
-function resetScan() {
-  document.getElementById('scan-step1').style.display='';
-  document.getElementById('scan-step2').style.display='none';
-  document.getElementById('scan-step3').style.display='none';
-  document.getElementById('img-input').value='';
-  parsedRows=[];
-}
-
-function confirmImport() {
-  const valid = parsedRows.filter(r=>r.name && r.name.trim());
-  if (!valid.length) { alert('氏名が入力されていません'); return; }
-
-  // Merge into residents if not already present
-  valid.forEach((item,idx) => {
-    const existing = residents.find(r=>r.name===item.name.trim());
-    if (!existing) {
-      residents.push({
-        id: 'r'+Date.now()+idx,
-        name: item.name.trim(),
-        age: item.age||0,
-        gender: item.gender||'不明',
-        room: item.room||'',
-        ci: residents.length % COLORS.length,
-      });
-    }
-  });
-  save();
-
-  // Save today's list
-  saveTodayList(valid.map(r=>({...r, name:r.name.trim()})));
-
-  toast(`📋 ${valid.length}名を本日の名簿として登録しました`);
-  resetScan();
-  gotoTab('dashboard');
-}
-
-// ===================== RECORD TAB =====================
-let selRes = null;
-function renderRecTab() {
-  const active = getActiveResidents();
-  const grid = document.getElementById('rec-res-grid');
-  if (!active.length) {
-    grid.innerHTML='<div class="empty"><div class="empty-icon">📷</div><div>名簿を読み込むか、利用者を登録してください</div></div>';
-    return;
-  }
-  grid.innerHTML = active.map(r=>{
-    const c=COLORS[r.ci%COLORS.length];
-    return `<div class="res-card ${selRes===r.id?'selected':''}" onclick="selectRes('${r.id}')">
-      <div class="res-top">
-        <div class="res-avatar" style="background:${c.bg};color:${c.fg}">${r.name.charAt(0)}</div>
-        <div><div class="res-name">${r.name}</div><div class="res-meta">${r.age||''}歳・${r.room||''}号室</div></div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function selectRes(rid) {
-  selRes = rid;
-  const res = residents.find(r=>r.id===rid);
-  if (!res) return;
-  document.getElementById('rec-form-wrap').style.display='';
-  document.getElementById('rec-form-title').textContent = res.name+' さん';
-  const n=new Date(), pad=x=>String(x).padStart(2,'0');
-  document.getElementById('f-dt').value=`${n.getFullYear()}-${pad(n.getMonth()+1)}-${pad(n.getDate())}T${pad(n.getHours())}:${pad(n.getMinutes())}`;
-  renderRecTab();
-  document.getElementById('rec-form-wrap').scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function checkTempStyle() {
-  const v=parseFloat(document.getElementById('f-temp').value), el=document.getElementById('f-temp');
-  el.className=''; if(v>=38.0)el.className='alert'; else if(v>=37.5||v<=35.0)el.className='warn';
-}
-function checkBpStyle() {
-  const s=parseInt(document.getElementById('f-bp-sys').value), el=document.getElementById('f-bp-sys');
-  el.className=''; if(s>=160||s<=90)el.className='alert'; else if(s>=140||s<=100)el.className='warn';
-}
-function checkPulseStyle() {
-  const v=parseInt(document.getElementById('f-pulse').value), el=document.getElementById('f-pulse');
-  el.className=''; if(v>=120||v<=45)el.className='alert'; else if(v>=100||v<=55)el.className='warn';
-}
-function clearForm() {
-  ['f-temp','f-bp-sys','f-bp-dia','f-pulse','f-note'].forEach(id=>{const el=document.getElementById(id);el.value='';el.className='';});
-}
-function saveRecord() {
-  if(!selRes){alert('利用者を選択してください');return;}
-  const temp=document.getElementById('f-temp').value, bpSys=document.getElementById('f-bp-sys').value,
-        bpDia=document.getElementById('f-bp-dia').value, pulse=document.getElementById('f-pulse').value,
-        note=document.getElementById('f-note').value, dt=document.getElementById('f-dt').value;
-  if(!dt||!temp){alert('日時と体温は必須です');return;}
-  const rec={id:'rec'+Date.now(),rid:selRes,dt,temp,bpSys,bpDia,pulse,note};
-  records.unshift(rec); save(); clearForm();
-  const s=statusOf(rec);
-  if(s==='alert') alert('⚠️ 異常値が検出されました！担当者へ速やかに報告してください。');
-  else toast('✓ 保存しました');
-}
-
-// ===================== HISTORY =====================
-function renderHistory() {
-  const sel=document.getElementById('h-res-filter'), cur=sel.value;
-  sel.innerHTML='<option value="">全利用者</option>'+
-    residents.map(r=>`<option value="${r.id}" ${cur===r.id?'selected':''}>${r.name}</option>`).join('');
-  const fRes=sel.value, fFrom=document.getElementById('h-date-from').value, fTo=document.getElementById('h-date-to').value;
-  let rows=[...records];
-  if(fRes) rows=rows.filter(r=>r.rid===fRes);
-  if(fFrom)rows=rows.filter(r=>r.dt>=fFrom);
-  if(fTo)  rows=rows.filter(r=>r.dt<=fTo+'T23:59');
-  rows.sort((a,b)=>b.dt.localeCompare(a.dt));
-  const tbody=document.getElementById('hist-tbody'), empty=document.getElementById('hist-empty');
-  if(!rows.length){tbody.innerHTML='';empty.style.display='';return;}
-  empty.style.display='none';
-  tbody.innerHTML=rows.map(r=>{
-    const res=residents.find(x=>x.id===r.rid), c=res?COLORS[res.ci%COLORS.length]:COLORS[0];
-    const s=statusOf(r);
-    const tC=parseFloat(r.temp)>=38?' td-alert':parseFloat(r.temp)>=37.5?' td-warn':'';
-    const bC=parseInt(r.bpSys)>=160?' td-alert':parseInt(r.bpSys)>=140?' td-warn':'';
-    const pC=parseInt(r.pulse)>=100||parseInt(r.pulse)<=50?' td-warn':'';
-    return `<tr>
-      <td class="td-mono">${fmtDt(r.dt)}</td>
-      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c.fg};display:inline-block"></span>${res?.name||'—'}</span></td>
-      <td class="td-mono">${res?.room||'—'}</td>
-      <td class="td-mono${tC}">${r.temp||'—'}</td>
-      <td class="td-mono${bC}">${r.bpSys&&r.bpDia?r.bpSys+'/'+r.bpDia:'—'}</td>
-      <td class="td-mono${pC}">${r.pulse||'—'}</td>
-      <td>${chipOf(s)}</td>
-      <td style="font-size:12px;color:var(--muted);max-width:140px;word-break:break-all">${r.note||''}</td>
-      <td><button class="btn btn-ghost" onclick="delRecord('${r.id}')">✕</button></td>
-    </tr>`;
-  }).join('');
-}
-function clearFilter(){document.getElementById('h-res-filter').value='';document.getElementById('h-date-from').value='';document.getElementById('h-date-to').value='';renderHistory();}
-function delRecord(id){if(!confirm('削除しますか？'))return;records=records.filter(r=>r.id!==id);save();renderHistory();}
-
-function exportCSV() {
-  const fRes=document.getElementById('h-res-filter').value, fFrom=document.getElementById('h-date-from').value, fTo=document.getElementById('h-date-to').value;
-  let rows=[...records];
-  if(fRes) rows=rows.filter(r=>r.rid===fRes);
-  if(fFrom)rows=rows.filter(r=>r.dt>=fFrom);
-  if(fTo)  rows=rows.filter(r=>r.dt<=fTo+'T23:59');
-  rows.sort((a,b)=>b.dt.localeCompare(a.dt));
-  if(!rows.length){alert('出力する記録がありません');return;}
-  const header=['日時','利用者名','部屋番号','年齢','性別','体温(℃)','収縮期血圧','拡張期血圧','脈拍','状態','特記事項'];
-  const sLabel=s=>s==='alert'?'要注意':s==='warn'?'注意':s==='ok'?'正常':'未測定';
-  const lines=[header,...rows.map(r=>{
-    const res=residents.find(x=>x.id===r.rid);
-    return [r.dt.replace('T',' '),res?.name||'',res?.room||'',res?.age||'',res?.gender||'',r.temp||'',r.bpSys||'',r.bpDia||'',r.pulse||'',sLabel(statusOf(r)),(r.note||'').replace(/,/g,'、')];
-  })];
-  const csv='\uFEFF'+lines.map(l=>l.map(v=>`"${v}"`).join(',')).join('\r\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
-  a.download=`バイタル記録_${todayStr.replace(/-/g,'')}.csv`;
-  a.click();
-  toast('📥 CSVをダウンロードしました');
-}
-
-// ===================== RESIDENTS =====================
-function addResident() {
-  const name=document.getElementById('r-name').value.trim(), age=parseInt(document.getElementById('r-age').value),
-        gender=document.getElementById('r-gender').value, room=document.getElementById('r-room').value.trim();
-  if(!name||isNaN(age)){alert('氏名と年齢を入力してください');return;}
-  residents.push({id:'r'+Date.now(),name,age,gender,room,ci:residents.length%COLORS.length});
-  save();['r-name','r-age','r-room'].forEach(id=>document.getElementById(id).value='');
-  renderResidents();toast('利用者を追加しました');
-}
-function delResident(id) {
-  if(!confirm('この利用者と記録を削除しますか？'))return;
-  residents=residents.filter(r=>r.id!==id);records=records.filter(r=>r.rid!==id);save();renderResidents();
-}
-function renderResidents() {
-  const el=document.getElementById('res-manage-list');
-  if(!residents.length){el.innerHTML='<div class="empty"><div class="empty-icon">👤</div><div>登録された利用者はいません</div></div>';return;}
-  el.innerHTML=residents.map(r=>{
-    const c=COLORS[r.ci%COLORS.length], cnt=records.filter(x=>x.rid===r.id).length;
-    return `<div class="res-manage-item">
-      <div class="res-avatar" style="background:${c.bg};color:${c.fg};width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0">${r.name.charAt(0)}</div>
-      <div style="flex:1"><div style="font-weight:700;font-size:14px">${r.name}</div><div style="font-size:12px;color:var(--muted)">${r.age}歳 ${r.gender}・${r.room}号室　記録 ${cnt}件</div></div>
-      <button class="btn btn-secondary btn-sm" onclick="jumpRecord('${r.id}','${r.name}',${r.age},'${r.gender}','${r.room}',${r.ci})">記録</button>
-      <button class="btn btn-ghost" onclick="delResident('${r.id}')">✕</button>
-    </div>`;
-  }).join('');
-}
-
-// ===================== TOAST =====================
-function toast(msg) {
-  const t=document.createElement('div');t.className='toast';t.textContent=msg;
-  document.body.appendChild(t);
-  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity 0.4s';},2200);
-  setTimeout(()=>t.remove(),2700);
-}
-
-// ===================== INIT =====================
-renderDash();
-
-// ===================== PWA: Service Worker 登録 =====================
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(e => console.log('SW error:', e));
-  });
-}
-
-// ===================== PWA: インストールバナー =====================
-let deferredPrompt = null;
-
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showInstallBanner();
+document.querySelectorAll('.dow-btn').forEach(b => {
+    b.addEventListener('click', () => b.classList.toggle('sel'));
 });
 
-function showInstallBanner() {
-  if (document.getElementById('install-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'install-banner';
-  banner.style.cssText = `
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-    background: #1a6b5e; color: white;
-    padding: 14px 20px; display: flex; align-items: center;
-    justify-content: space-between; gap: 12px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-    font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
-  `;
-  banner.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:22px">📱</span>
-      <div>
-        <div style="font-weight:700;margin-bottom:2px">ホーム画面に追加</div>
-        <div style="opacity:0.8;font-size:11px">アプリとして使えます</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button onclick="dismissInstall()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 14px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px">後で</button>
-      <button onclick="installApp()" style="background:white;border:none;color:#1a6b5e;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">追加する</button>
-    </div>
-  `;
-  document.body.appendChild(banner);
+function saveSettings() {
+    S.facilityName = document.getElementById('sName').value.trim() || 'デイサービス';
+    S.capacity = Math.max(1, parseInt(document.getElementById('sCap').value) || 20);
+    S.targetRate = Math.min(100, Math.max(1, parseInt(document.getElementById('sTarget').value) || 80));
+    S.opDays = [];
+    document.querySelectorAll('.dow-btn.sel').forEach(b => S.opDays.push(+b.dataset.d));
+    save();
+    closeSettings();
+    refresh();
 }
 
-function installApp() {
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(() => {
-    deferredPrompt = null;
-    dismissInstall();
-  });
+// ===== REFRESH =====
+function refresh() {
+    document.getElementById('facilityNameDisp').textContent = S.facilityName;
+    document.getElementById('monthDisp').textContent = `${cYear}年${cMonth}月`;
+    document.getElementById('capDisp').textContent = S.capacity;
+    renderTable();
+    updateCards();
+    if (curTab === 'report') { renderReportStats(); renderChart(); }
 }
 
-function dismissInstall() {
-  const b = document.getElementById('install-banner');
-  if (b) b.remove();
+// ===== SERVICE WORKER =====
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
 }
 
-// iOS向け：Safariで開いた時にインストール案内を表示
-const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-const isInStandalone = window.navigator.standalone === true;
-if (isIos && !isInStandalone) {
-  setTimeout(() => {
-    if (document.getElementById('install-banner')) return;
-    const banner = document.createElement('div');
-    banner.id = 'install-banner';
-    banner.style.cssText = `
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-      background: #1a6b5e; color: white;
-      padding: 14px 20px;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-      font-family: 'Noto Sans JP', sans-serif; font-size: 13px;
-    `;
-    banner.innerHTML = `
-      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px">
-        <span style="font-size:22px">📱</span>
-        <div>
-          <div style="font-weight:700;margin-bottom:4px">ホーム画面に追加してアプリとして使えます</div>
-          <div style="opacity:0.85;line-height:1.6">
-            ① 下の <strong>共有ボタン（□↑）</strong> をタップ<br>
-            ② <strong>「ホーム画面に追加」</strong> を選択
-          </div>
-        </div>
-      </div>
-      <div style="text-align:right">
-        <button onclick="dismissInstall()" style="background:rgba(255,255,255,0.2);border:none;color:white;padding:8px 16px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:13px">閉じる</button>
-      </div>
-    `;
-    document.body.appendChild(banner);
-  }, 2000);
-}
-
+// ===== INIT =====
+load();
+refresh();
+</script>
 </body>
 </html>
